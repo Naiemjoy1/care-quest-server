@@ -98,6 +98,17 @@ async function run() {
       res.send({ admin });
     });
 
+    app.get("/users/status/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const user = await usersCollection.findOne(query);
+      if (user) {
+        res.send({ status: user.status });
+      } else {
+        res.status(404).send({ message: "User not found" });
+      }
+    });
+
     app.post("/users", async (req, res) => {
       const user = req.body;
       const query = { email: user.email };
