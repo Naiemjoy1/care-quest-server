@@ -170,6 +170,26 @@ async function run() {
       res.send(result);
     });
 
+    app.patch("/tests/:id", async (req, res) => {
+      const item = req.body;
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          name: item.name,
+          image: item.image,
+          description: item.description,
+          price: item.price,
+          date: item.date,
+          category: item.category,
+          capacity: item.capacity,
+          slots: item.slots,
+        },
+      };
+      const result = await testsCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+    });
+
     // reviews
     app.get("/reviews", async (req, res) => {
       const result = await reviewsCollection.find().toArray();
