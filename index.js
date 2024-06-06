@@ -164,6 +164,12 @@ async function run() {
       res.send(result);
     });
 
+    app.post("/tests", async (req, res) => {
+      const item = req.body;
+      const result = await testsCollection.insertOne(item);
+      res.send(result);
+    });
+
     // reviews
     app.get("/reviews", async (req, res) => {
       const result = await reviewsCollection.find().toArray();
