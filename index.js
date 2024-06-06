@@ -209,11 +209,31 @@ async function run() {
     });
 
     // booking
-    app.get("/bookings", async (req, res) => {
-      const email = req.query.email;
+    // app.get("/bookings", async (req, res) => {
+    //   const email = req.query.email;
+    //   const query = { email: email };
+    //   const result = await bookingsCollection.find(query).toArray();
+    //   res.send(result);
+    // });
+
+    // app.get("/bookings/all", verifyToken, verifyAdmin, async (req, res) => {
+    //   const result = await bookingsCollection.find().toArray();
+    //   res.send(result);
+    // });
+
+    app.get("/bookings", verifyToken, async (req, res) => {
+      // Check if the request is made by an admin
+      const email = req.decoded.email;
       const query = { email: email };
-      const result = await bookingsCollection.find(query).toArray();
-      res.send(result);
+      const user = await usersCollection.findOne(query);
+      if (user.role === "admin") {
+        const result = await bookingsCollection.find().toArray(); // Fetch all bookings
+        res.send(result);
+      } else {
+        // If not admin, fetch bookings based on user's email
+        const result = await bookingsCollection.find(query).toArray();
+        res.send(result);
+      }
     });
 
     app.post("/bookings", async (req, res) => {
