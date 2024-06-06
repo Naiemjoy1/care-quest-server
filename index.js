@@ -242,6 +242,24 @@ async function run() {
       res.send(result);
     });
 
+    app.patch(
+      "/bookings/status/:id",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        const id = req.params.id;
+        const status = req.body.status; // Get the new status from the request body
+        const query = { _id: new ObjectId(id) };
+        const updatedDoc = {
+          $set: {
+            status: status,
+          },
+        };
+        const result = await bookingsCollection.updateOne(query, updatedDoc);
+        res.send(result);
+      }
+    );
+
     app.delete("/bookings/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
