@@ -247,16 +247,22 @@ async function run() {
       verifyToken,
       verifyAdmin,
       async (req, res) => {
-        const id = req.params.id;
-        const status = req.body.status; // Get the new status from the request body
-        const query = { _id: new ObjectId(id) };
-        const updatedDoc = {
-          $set: {
-            status: status,
-          },
-        };
-        const result = await bookingsCollection.updateOne(query, updatedDoc);
-        res.send(result);
+        try {
+          const id = req.params.id;
+          const { status, report } = req.body;
+          const query = { _id: new ObjectId(id) };
+          const updatedDoc = {
+            $set: {
+              status: status,
+              report: report, // Store report data along with status
+            },
+          };
+          const result = await bookingsCollection.updateOne(query, updatedDoc);
+          res.send(result);
+        } catch (error) {
+          console.error("Error updating booking status:", error);
+          res.status(500).send({ message: "Internal server error" });
+        }
       }
     );
 
