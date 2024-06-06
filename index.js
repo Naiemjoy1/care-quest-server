@@ -103,7 +103,7 @@ async function run() {
       const query = { email: email };
       const user = await usersCollection.findOne(query);
       if (user) {
-        res.send({ status: user.status });
+        res.send({ status: user.status, role: user.role }); // Send both status and role
       } else {
         res.status(404).send({ message: "User not found" });
       }
