@@ -165,6 +165,17 @@ async function run() {
       res.send(reviews);
     });
 
+    app.post("/reviews", async (req, res) => {
+      const review = req.body;
+      try {
+        const result = await reviewsCollection.insertOne(review);
+        res.send(result);
+      } catch (error) {
+        console.error("Error inserting review:", error);
+        res.status(500).send({ message: "Internal server error" });
+      }
+    });
+
     app.get("/doctors", async (req, res) => {
       const doctors = await doctorsCollection.find().toArray();
       res.send(doctors);
