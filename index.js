@@ -35,6 +35,7 @@ async function run() {
     const doctorsCollection = db.collection("doctors");
     const promotionsCollection = db.collection("promotions");
     const bookingsCollection = db.collection("bookings");
+    const paymentsCollection = db.collection("payments");
 
     app.post("/jwt", async (req, res) => {
       const user = req.body;
@@ -218,6 +219,7 @@ async function run() {
       res.send(result);
     });
 
+    // payment
     app.post("/create-payment-intent", async (req, res) => {
       const { price } = req.body;
       const amount = parseInt(price * 100);
@@ -228,6 +230,13 @@ async function run() {
         payment_method_types: ["card"],
       });
       res.send({ clientSecret: paymentIntent.client_secret });
+    });
+
+    app.post("/payments", async (req, res) => {
+      const payment = req.body;
+      const paymentResult = await paymentsCollection.insertOne(payment);
+      console.log("payment info", payment);
+      res.send(paymentResult);
     });
 
     console.log(
