@@ -175,15 +175,21 @@ async function run() {
       res.send(promotions);
     });
 
+    // app.get("/bookings", verifyToken, async (req, res) => {
+    //   const email = req.decoded.email;
+    //   const user = await usersCollection.findOne({ email });
+    //   let bookings;
+    //   if (user && user.role === "admin") {
+    //     bookings = await bookingsCollection.find().toArray();
+    //   } else {
+    //     bookings = await bookingsCollection.find({ email }).toArray();
+    //   }
+    //   res.send(bookings);
+    // });
+
     app.get("/bookings", verifyToken, async (req, res) => {
       const email = req.decoded.email;
-      const user = await usersCollection.findOne({ email });
-      let bookings;
-      if (user && user.role === "admin") {
-        bookings = await bookingsCollection.find().toArray();
-      } else {
-        bookings = await bookingsCollection.find({ email }).toArray();
-      }
+      const bookings = await bookingsCollection.find().toArray();
       res.send(bookings);
     });
 
