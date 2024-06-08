@@ -176,7 +176,7 @@ async function run() {
       const email = req.decoded.email;
       const user = await usersCollection.findOne({ email });
       let bookings;
-      if (user.role === "admin") {
+      if (user && user.role === "admin") {
         bookings = await bookingsCollection.find().toArray();
       } else {
         bookings = await bookingsCollection.find({ email }).toArray();
