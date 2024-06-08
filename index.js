@@ -86,10 +86,13 @@ async function run() {
     app.get("/users/status/:email", async (req, res) => {
       const email = req.params.email;
       const user = await usersCollection.findOne({ email });
+      console.log("hiit", user);
       if (user) {
+        console.log("get");
         res.send({ status: user.status, role: user.role });
       } else {
         res.status(404).send({ message: "User not found" });
+        console.log("pai nai");
       }
     });
 
