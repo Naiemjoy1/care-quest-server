@@ -2,7 +2,6 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
-const multer = require("multer");
 require("dotenv").config();
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const port = process.env.PORT || 3000;
@@ -280,36 +279,6 @@ async function run() {
         }
       }
     );
-
-    // Set up multer storage
-    const storage = multer.diskStorage({
-      destination: function (req, file, cb) {
-        cb(null, "uploads/"); // Specify the directory where files will be uploaded
-      },
-      filename: function (req, file, cb) {
-        cb(null, Date.now() + "-" + file.originalname); // Set the filename
-      },
-    });
-
-    // Initialize multer upload
-    const upload = multer({ storage: storage });
-
-    app.post("/upload", upload.single("report"), (req, res) => {
-      // If using a form field named 'report' for the file upload, use 'upload.single("report")'
-      // If using multiple files, use 'upload.array("report")' and adjust the frontend accordingly
-      // 'report' should match the name attribute in your form input
-
-      const file = req.file; // Contains information about the uploaded file
-      if (!file) {
-        return res.status(400).send({ message: "No file uploaded" });
-      }
-
-      // If file is uploaded successfully, send a success response
-      res.status(200).send({
-        message: "File uploaded successfully",
-        filename: file.filename,
-      });
-    });
 
     app.delete("/bookings/:id", async (req, res) => {
       const id = req.params.id;
