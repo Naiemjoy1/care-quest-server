@@ -36,6 +36,7 @@ async function run() {
     const promotionsCollection = db.collection("promotions");
     const bookingsCollection = db.collection("bookings");
     const paymentsCollection = db.collection("payments");
+    const bannerCollection = db.collection("banners");
 
     app.post("/jwt", async (req, res) => {
       const user = req.body;
@@ -184,6 +185,18 @@ async function run() {
     app.get("/promotions", async (req, res) => {
       const promotions = await promotionsCollection.find().toArray();
       res.send(promotions);
+    });
+
+    //baner
+    app.get("/banners", async (req, res) => {
+      const banners = await bannerCollection.find().toArray();
+      res.send(banners);
+    });
+
+    app.post("/banners", async (req, res) => {
+      const banner = req.body;
+      const result = await bannerCollection.insertOne(banner);
+      res.send(result);
     });
 
     // app.get("/bookings", verifyToken, async (req, res) => {
