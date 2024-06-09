@@ -199,6 +199,27 @@ async function run() {
       res.send(result);
     });
 
+    app.patch("/banners/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        // Deactivate all banners except the one being activated
+        await bannerCollection.updateMany(
+          { _id: { $ne: new ObjectId(id) } },
+          { $set: { isActive: false } }
+        );
+        // Activate the specified banner
+        const result = await bannerCollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: { isActive: true } }
+        );
+        console.log("Updated isActive field:", result);
+        res.send(result);
+      } catch (error) {
+        console.error("Error updating isActive field:", error);
+        res.status(500).send({ message: "Internal server error" });
+      }
+    });
+
     // app.get("/bookings", verifyToken, async (req, res) => {
     //   const email = req.decoded.email;
     //   const user = await usersCollection.findOne({ email });
