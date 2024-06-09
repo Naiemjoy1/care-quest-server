@@ -2,6 +2,7 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
+const multer = require("multer");
 require("dotenv").config();
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const port = process.env.PORT || 3000;
@@ -86,16 +87,35 @@ async function run() {
 
     app.get("/users/status/:email", async (req, res) => {
       const email = req.params.email;
-      const user = await usersCollection.findOne({ email });
-      console.log("hiit", user);
-      if (user) {
-        console.log("get");
-        res.send({ status: user.status, role: user.role });
-      } else {
-        res.status(404).send({ message: "User not found" });
-        console.log("pai nai");
+      console.log("Received request to get status for email:", email);
+
+      try {
+        const user = await usersCollection.findOne({ email });
+        if (user) {
+          console.log("User found:", user);
+          res.send({ status: user.status, role: user.role });
+        } else {
+          console.log("User not found for email:", email);
+          res.status(404).send({ message: "User not found" });
+        }
+      } catch (error) {
+        console.error("Error finding user:", error);
+        res.status(500).send({ message: "Internal server error" });
       }
     });
+
+    app.patch(
+      "/users/status/:email",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        const email = req.params.email;
+        const { status } = req.body;
+        const updatedDoc = { $set: { status } };
+        const result = await usersCollection.updateOne({ email }, updatedDoc);
+        res.send(result);
+      }
+    );
 
     app.post("/users", async (req, res) => {
       const user = req.body;
@@ -187,7 +207,7 @@ async function run() {
       res.send(promotions);
     });
 
-    //baner
+    //banner
     app.get("/banners", async (req, res) => {
       const banners = await bannerCollection.find().toArray();
       res.send(banners);
@@ -199,7 +219,7 @@ async function run() {
       res.send(result);
     });
 
-    app.patch("/banners/:id", async (req, res) => {
+    app.patch("/banners/:id", verifyToken, verifyAdmin, async (req, res) => {
       try {
         const id = req.params.id;
         // Deactivate all banners except the one being activated
@@ -220,17 +240,13 @@ async function run() {
       }
     });
 
-    // app.get("/bookings", verifyToken, async (req, res) => {
-    //   const email = req.decoded.email;
-    //   const user = await usersCollection.findOne({ email });
-    //   let bookings;
-    //   if (user && user.role === "admin") {
-    //     bookings = await bookingsCollection.find().toArray();
-    //   } else {
-    //     bookings = await bookingsCollection.find({ email }).toArray();
-    //   }
-    //   res.send(bookings);
-    // });
+    app.delete("/banners/:id", verifyToken, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const result = await bannerCollection.deleteOne({
+        _id: new ObjectId(id),
+      });
+      res.send(result);
+    });
 
     app.get("/bookings", verifyToken, async (req, res) => {
       const email = req.decoded.email;
@@ -264,6 +280,36 @@ async function run() {
         }
       }
     );
+
+    // Set up multer storage
+    const storage = multer.diskStorage({
+      destination: function (req, file, cb) {
+        cb(null, "uploads/"); // Specify the directory where files will be uploaded
+      },
+      filename: function (req, file, cb) {
+        cb(null, Date.now() + "-" + file.originalname); // Set the filename
+      },
+    });
+
+    // Initialize multer upload
+    const upload = multer({ storage: storage });
+
+    app.post("/upload", upload.single("report"), (req, res) => {
+      // If using a form field named 'report' for the file upload, use 'upload.single("report")'
+      // If using multiple files, use 'upload.array("report")' and adjust the frontend accordingly
+      // 'report' should match the name attribute in your form input
+
+      const file = req.file; // Contains information about the uploaded file
+      if (!file) {
+        return res.status(400).send({ message: "No file uploaded" });
+      }
+
+      // If file is uploaded successfully, send a success response
+      res.status(200).send({
+        message: "File uploaded successfully",
+        filename: file.filename,
+      });
+    });
 
     app.delete("/bookings/:id", async (req, res) => {
       const id = req.params.id;
