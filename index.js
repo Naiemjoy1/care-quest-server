@@ -259,6 +259,146 @@ async function run() {
       res.send(paymentResult);
     });
 
+    // stats
+    app.get("/admin-stats", verifyToken, verifyAdmin, async (req, res) => {
+      const users = await usersCollection.estimatedDocumentCount();
+      const tests = await testsCollection.estimatedDocumentCount();
+      const bookings = await bookingsCollection.estimatedDocumentCount();
+      const payments = await paymentsCollection.estimatedDocumentCount();
+
+      const result = await paymentsCollection
+        .aggregate([
+          {
+            $group: {
+              _id: null,
+              totalRevenue: {
+                $sum: "$price",
+              },
+            },
+          },
+        ])
+        .toArray();
+
+      const revenue = result.length > 0 ? result[0].totalRevenue : 0;
+
+      res.send({
+        users,
+        tests,
+        bookings,
+        payments,
+        revenue,
+      });
+    });
+
+    // order stats
+    app.get("/category-stats", async (req, res) => {
+      try {
+        const pipeline = [
+          {
+            $group: {
+              _id: {
+                bookId: "$bookId",
+                status: "$status",
+              },
+              count: { $sum: 1 },
+              totalRevenue: { $sum: "$finalPrice" },
+            },
+          },
+          {
+            $addFields: {
+              bookId: { $toObjectId: "$_id.bookId" },
+            },
+          },
+          {
+            $lookup: {
+              from: "tests",
+              localField: "bookId",
+              foreignField: "_id",
+              as: "test",
+            },
+          },
+          {
+            $unwind: "$test",
+          },
+          {
+            $group: {
+              _id: "$test.category",
+              category: { $first: "$test.category" }, // Adding category ID
+              totalCount: { $sum: "$count" },
+              totalRevenue: { $sum: "$totalRevenue" },
+              pendingCount: {
+                $sum: {
+                  $cond: [{ $eq: ["$_id.status", "Pending"] }, "$count", 0],
+                },
+              },
+              deliveredCount: {
+                $sum: {
+                  $cond: [{ $eq: ["$_id.status", "Delivered"] }, "$count", 0],
+                },
+              },
+            },
+          },
+          {
+            $sort: { totalCount: -1 },
+          },
+        ];
+
+        const categoryStats = await bookingsCollection
+          .aggregate(pipeline)
+          .toArray();
+        console.log("Category Stats Data:", categoryStats); // Debugging line
+        res.send(categoryStats);
+      } catch (error) {
+        console.error("Error fetching category stats:", error);
+        res.status(500).send({ message: "Internal server error" });
+      }
+    });
+
+    // populer items
+    app.get("/popular-tests", async (req, res) => {
+      try {
+        const pipeline = [
+          {
+            $group: {
+              _id: "$bookId",
+              count: { $sum: 1 },
+            },
+          },
+          {
+            $addFields: {
+              bookId: { $toObjectId: "$_id" },
+            },
+          },
+          {
+            $lookup: {
+              from: "tests",
+              localField: "bookId",
+              foreignField: "_id",
+              as: "test",
+            },
+          },
+          {
+            $unwind: "$test",
+          },
+          {
+            $sort: { count: -1 },
+          },
+          {
+            $limit: 5,
+          },
+        ];
+
+        const popularTests = await bookingsCollection
+          .aggregate(pipeline)
+          .toArray();
+        console.log("Popular Tests Data:", popularTests); // Debugging line
+        res.send(popularTests);
+      } catch (error) {
+        console.error("Error fetching popular tests:", error);
+        res.status(500).send({ message: "Internal server error" });
+      }
+    });
+
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
