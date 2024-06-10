@@ -8,7 +8,12 @@ const port = process.env.PORT || 3000;
 
 app.use(
   cors({
-    origin: ["http://localhost:5173"],
+    origin: [
+      "http://localhost:5173",
+      "https://care-quest-2ae20.web.app",
+      "https://care-quest-2ae20.firebaseapp.com",
+    ],
+    credentials: true,
   })
 );
 app.use(express.json());
@@ -26,7 +31,7 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    await client.connect();
+    // await client.connect();
 
     const db = client.db("carequestDB");
     const usersCollection = db.collection("users");
@@ -84,24 +89,36 @@ async function run() {
       res.send({ admin: user?.role === "admin" });
     });
 
-    app.get("/users/status/:email", async (req, res) => {
+    app.get("/users/status/:email", verifyToken, async (req, res) => {
       const email = req.params.email;
-      console.log("Received request to get status for email:", email);
-
-      try {
-        const user = await usersCollection.findOne({ email });
-        if (user) {
-          console.log("User found:", user);
-          res.send({ status: user.status, role: user.role });
-        } else {
-          console.log("User not found for email:", email);
-          res.status(404).send({ message: "User not found" });
-        }
-      } catch (error) {
-        console.error("Error finding user:", error);
-        res.status(500).send({ message: "Internal server error" });
+      if (email !== req.decoded.email) {
+        return res.status(403).send({ message: "Forbidden access" });
       }
+      const user = await usersCollection.findOne({ email });
+      res.send({
+        status: user?.status === "active",
+        admin: user?.role === "admin",
+      });
     });
+
+    // app.get("/users/status/:email", async (req, res) => {
+    //   const email = req.params.email;
+    //   console.log("Received request to get status for email:", email);
+
+    //   try {
+    //     const user = await usersCollection.findOne({ email });
+    //     if (user) {
+    //       console.log("User found:", user);
+    //       res.send({ status: user.status, role: user.role });
+    //     } else {
+    //       console.log("User not found for email:", email);
+    //       res.status(404).send({ message: "User not found" });
+    //     }
+    //   } catch (error) {
+    //     console.error("Error finding user:", error);
+    //     res.status(500).send({ message: "Internal server error" });
+    //   }
+    // });
 
     app.patch(
       "/users/status/:email",
@@ -448,23 +465,23 @@ async function run() {
       }
     });
 
+    app.get("/", (req, res) => {
+      res.send("Carequest is sitting");
+    });
+
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
   } finally {
     // Ensuring the MongoDB connection is closed when the server stops
-    process.on("SIGINT", async () => {
-      await client.close();
-      process.exit(0);
-    });
+    // process.on("SIGINT", async () => {
+    //   await client.close();
+    //   process.exit(0);
+    // });
   }
 }
 
 run().catch(console.dir);
-
-app.get("/", (req, res) => {
-  res.send("Carequest is sitting");
-});
 
 app.listen(port, () => {
   console.log(`Carequest is sitting on port ${port}`);
