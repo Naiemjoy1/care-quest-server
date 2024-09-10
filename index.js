@@ -85,9 +85,35 @@ async function run() {
       if (email !== req.decoded.email) {
         return res.status(403).send({ message: "Forbidden access" });
       }
-      const user = await usersCollection.findOne({ email });
-      res.send({ admin: user?.role === "admin" });
+
+      try {
+        const user = await usersCollection.findOne(
+          { email },
+          { projection: { role: 1 } }
+        );
+        if (!user) {
+          return res.status(404).send({ message: "User not found" });
+        }
+
+        const isAdmin = user.role === "admin";
+        res.send({ admin: isAdmin });
+      } catch (error) {
+        console.error("Error fetching admin status:", error);
+        res.status(500).send({ message: "Internal server error" });
+      }
     });
+
+    // app.get("/users/admin/:email", verifyToken, async (req, res) => {
+    //   const email = req.params.email;
+
+    //   if (email !== req.decoded.email) {
+    //     return res.status(403).send({ message: "Forbidden access" });
+    //   }
+    //   const query = { email: email };
+    //   const user = await userCollection.findOne(query);
+    //   const admin = user?.role === "admin";
+    //   res.send({ admin });
+    // });
 
     app.get("/users/status/:email", verifyToken, async (req, res) => {
       const email = req.params.email;
